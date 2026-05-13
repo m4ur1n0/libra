@@ -1,0 +1,26 @@
+{
+  "name": "bookapp-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-04-28",
+  "workers_dev": true,
+
+//   "routes": [
+//     {
+//       "pattern": "api.domain.com/*", // update later
+//       "custom_domain": true
+//     }
+//   ],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bookapp_db",
+      "database_id": "8c75cc33-6972-48c5-9e0d-386f0d82a051"
+    }
+  ],
+
+
+  "vars": {
+    "ENVIRONMENT": "production"
+  }
+}
