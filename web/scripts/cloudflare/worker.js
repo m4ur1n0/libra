@@ -246,6 +246,45 @@ export default {
         return json(request, entry, 201);
       }
 
+      // DEV endpoints for graph management
+      if (request.method === "POST" && path.startsWith("/dev/recompute-book/")) {
+        const { handleRecomputeBook } = await import('./lib/handlers/dev/recompute-book.js');
+        const bookId = path.split("/")[3];
+        return await handleRecomputeBook(bookId, env.DB, request);
+      }
+
+      if (request.method === "POST" && path === "/dev/recompute-all") {
+        const { handleRecomputeAll } = await import('./lib/handlers/dev/recompute-all.js');
+        return await handleRecomputeAll(env.DB, request);
+      }
+
+      if (request.method === "POST" && path === "/dev/process-recompute-queue") {
+        const { handleProcessQueue } = await import('./lib/handlers/dev/process-queue.js');
+        const batchSize = url.searchParams.get("batch") || "20";
+        return await handleProcessQueue(batchSize, env.DB, request);
+      }
+
+      if (request.method === "GET" && path === "/dev/queue-status") {
+        const { handleQueueStatus } = await import('./lib/handlers/dev/queue-status.js');
+        return await handleQueueStatus(env.DB, request);
+      }
+
+      // API endpoints for graph queries
+      if (request.method === "GET" && path.match(/^\/books\/[^/]+\/graph$/)) {
+        const { handleBooksGraph } = await import('./lib/handlers/api/books-graph.js');
+        const bookId = path.split("/")[2];
+        const maxEdges = url.searchParams.get("maxEdges") || "8";
+        return await handleBooksGraph(bookId, maxEdges, env.DB, request);
+      }
+
+      if (request.method === "GET" && path.match(/^\/books\/[^/]+\/similar$/)) {
+        const { handleBooksSimilar } = await import('./lib/handlers/api/books-similar.js');
+        const bookId = path.split("/")[2];
+        const limit = url.searchParams.get("limit") || "10";
+        const reasonsFilter = url.searchParams.getAll("reasons[]");
+        return await handleBooksSimilar(bookId, limit, reasonsFilter, env.DB, request);
+      }
+
       return notFound(request);
     } catch (error) {
       return serverError(request, error);
