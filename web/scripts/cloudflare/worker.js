@@ -1,6 +1,6 @@
 
 const API_ORIGIN="https://bookapp-api.theomaurino2026.workers.dev"
-const APP_ORIGIN="https://domain.com"
+const APP_ORIGIN="http://localhost:3000"
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
