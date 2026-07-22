@@ -42,6 +42,15 @@ export type LibraryEntry = {
   updated_at: string;
 };
 
+export type BookWithAuthor = Book & { author: string | null };
+
+export type BookNeighbor = BookWithAuthor & { similarity_score: number };
+
+export type BookGraphResponse = {
+  focal: BookWithAuthor;
+  neighbors: BookNeighbor[];
+};
+
 export type Review = {
   id: string;
   library_entry_id: string;

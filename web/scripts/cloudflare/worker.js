@@ -269,7 +269,7 @@ export default {
         return await handleQueueStatus(env.DB, request);
       }
 
-      // API endpoints for graph queries
+      // book_similarity_edges — richer ML-computed graph
       if (request.method === "GET" && path.match(/^\/books\/[^/]+\/graph$/)) {
         const { handleBooksGraph } = await import('./lib/handlers/api/books-graph.js');
         const bookId = path.split("/")[2];
@@ -283,6 +283,54 @@ export default {
         const limit = url.searchParams.get("limit") || "10";
         const reasonsFilter = url.searchParams.getAll("reasons[]");
         return await handleBooksSimilar(bookId, limit, reasonsFilter, env.DB, request);
+      }
+
+      // book_edges — undirected edges used by the UI graph view
+      if (request.method === "GET" && path.startsWith("/graph/books/")) {
+        const bookId = path.split("/")[3];
+
+        if (!bookId) return badRequest(request, "Missing book ID");
+
+        const limit = Math.min(
+          parseInt(url.searchParams.get("limit") ?? "10") || 10,
+          50
+        );
+
+        const focal = await env.DB.prepare(
+          `
+          SELECT b.*, GROUP_CONCAT(a.name, ', ') as author
+          FROM books b
+          LEFT JOIN book_authors ba ON ba.book_id = b.id
+          LEFT JOIN authors a ON a.id = ba.author_id
+          WHERE b.id = ?
+          GROUP BY b.id
+          `
+        )
+          .bind(bookId)
+          .first();
+
+        if (!focal) return notFound(request);
+
+        const result = await env.DB.prepare(
+          `
+          SELECT b.*, e.similarity_score, GROUP_CONCAT(a.name, ', ') as author
+          FROM book_edges e
+          JOIN books b ON b.id = CASE
+            WHEN e.book_a_id = ? THEN e.book_b_id
+            ELSE e.book_a_id
+          END
+          LEFT JOIN book_authors ba ON ba.book_id = b.id
+          LEFT JOIN authors a ON a.id = ba.author_id
+          WHERE (e.book_a_id = ? OR e.book_b_id = ?)
+          GROUP BY b.id, e.similarity_score
+          ORDER BY e.similarity_score DESC
+          LIMIT ?
+          `
+        )
+          .bind(bookId, bookId, bookId, limit)
+          .all();
+
+        return json(request, { focal, neighbors: result.results ?? [] });
       }
 
       return notFound(request);
